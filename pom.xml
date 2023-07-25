@@ -78,7 +78,7 @@
             <groupId>mine.plugins.lunar</groupId>
             <artifactId>PluginFramework</artifactId>
             <version>1.0</version>
-            <scope>compile</scope>
+            <scope>provided</scope>
         </dependency>
         <dependency>
             <groupId>io.github.skytasul</groupId>

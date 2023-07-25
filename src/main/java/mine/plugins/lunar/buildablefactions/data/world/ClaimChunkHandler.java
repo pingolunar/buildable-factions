@@ -50,7 +50,7 @@ public class ClaimChunkHandler extends DatabaseHandler<ClaimChunk> {
         return Paths.get(world.getUID().toString(), String.valueOf(xChunk), String.valueOf(zChunk)).toString();
     }
 
-    public static Chunk ChunkFromID(String chunkID) throws IllegalArgumentException, IllegalStateException {
+    public static Chunk chunkFromID(String chunkID) throws IllegalArgumentException, IllegalStateException {
 
         var chunkInfo = chunkID.split(Pattern.quote(File.separator));
         if (chunkInfo.length != 3) throw new IllegalArgumentException();

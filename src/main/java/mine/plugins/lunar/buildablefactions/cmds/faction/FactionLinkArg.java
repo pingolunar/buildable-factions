@@ -22,7 +22,7 @@ public class FactionLinkArg extends LinkArg {
             List.of(new DatabasePerformanceArg(),
                     new FactionCreateArg(), new FactionInviteArg(),
                     new FactionRenameArg(), new FactionRetagArg(), new FactionColorArg(),
-                    new FactionInfoArg(), new FactionMapArg(),
+                    new FactionInfoArg(), new FactionChunksArg(), new FactionMapArg(),
                     new FactionClaimArg(), new FactionUnclaimArg(),
                     new FactionJoinArg(), new FactionLeaveArg()));
     }

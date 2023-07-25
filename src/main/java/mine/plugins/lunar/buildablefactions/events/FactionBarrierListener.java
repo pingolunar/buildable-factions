@@ -47,7 +47,7 @@ public class FactionBarrierListener extends BarrierProtectionListener {
         }
 
         var toWorld = to.getWorld();
-        if (toWorld != null) player.sendMessage("Attempting teleportation to: "+toWorld.getEnvironment().name()+
+        if (toWorld != null) player.sendMessage("Attempting teleportation to: "+toWorld.getName()+
                 ", "+to.toVector().toBlockVector());
 
         onlinePlayer.setDatabaseTask(() -> {

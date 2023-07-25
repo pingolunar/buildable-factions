@@ -14,6 +14,7 @@ import javax.annotation.Nullable;
 import java.io.Serializable;
 import java.util.HashSet;
 import java.util.UUID;
+import java.util.stream.Stream;
 
 public class FactionPlayer implements Serializable, DefaultDatabase {
 
@@ -92,6 +93,10 @@ public class FactionPlayer implements Serializable, DefaultDatabase {
 
     //region Chunk Claims
     private final HashSet<String> claimedChunks = new HashSet<>();
+
+    public Stream<String> getClaimedChunksIDs() {
+        return claimedChunks.stream();
+    }
 
     public void addClaimedChunk(Chunk chunk) {
         claimedChunks.add(ClaimChunkHandler.IDFromChunk(chunk));

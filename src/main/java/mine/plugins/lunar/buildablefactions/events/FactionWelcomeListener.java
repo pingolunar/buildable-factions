@@ -44,7 +44,7 @@ public class FactionWelcomeListener implements Listener {
         var randomClaimChunkID = factionPlayer.getRandomClaimChunkID();
         if (randomClaimChunkID != null) {
 
-            var randomChunk = ClaimChunkHandler.ChunkFromID(randomClaimChunkID);
+            var randomChunk = ClaimChunkHandler.chunkFromID(randomClaimChunkID);
             for (int i = 0; i < 99; i++) {
                 var randomLocInfo = onlinePlayer.getRandomLocation(randomChunk);
                 if (!randomLocInfo.isSafe()) continue;
