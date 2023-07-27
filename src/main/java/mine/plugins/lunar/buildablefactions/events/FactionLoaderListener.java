@@ -1,5 +1,6 @@
 package mine.plugins.lunar.buildablefactions.events;
 
+import lombok.NonNull;
 import mine.plugins.lunar.buildablefactions.data.faction.Faction;
 import mine.plugins.lunar.buildablefactions.data.faction.FactionEntityManager;
 import mine.plugins.lunar.buildablefactions.data.player.FactionOnlinePlayer;
@@ -25,6 +26,7 @@ import org.bukkit.event.world.ChunkLoadEvent;
 import org.bukkit.event.world.ChunkUnloadEvent;
 import org.bukkit.plugin.java.JavaPlugin;
 
+import javax.annotation.Nullable;
 import java.util.logging.Level;
 
 public class FactionLoaderListener implements Listener {
@@ -48,8 +50,14 @@ public class FactionLoaderListener implements Listener {
         }
 
         plugin.getLogger().log(Level.INFO, "Updating players...");
-        for (var player : Bukkit.getServer().getOnlinePlayers())
-            FactionOnlinePlayer.getFactionOnlinePlayerHandler().get(player).updateFactionBorder();
+        for (var player : Bukkit.getServer().getOnlinePlayers()) {
+
+            var onlinePlayer = FactionOnlinePlayer.getFactionOnlinePlayerHandler().get(player);
+            onlinePlayer.updateFactionBorder();
+
+            var playerClaimChunk = ClaimChunk.getClaimChunkHandler().getLoaded(player.getLocation().getChunk());
+            FactionLoaderListener.showTerritoryOwner(onlinePlayer, new ClaimChunk(), playerClaimChunk);
+        }
     }
 
     public static void disable() {
@@ -62,8 +70,6 @@ public class FactionLoaderListener implements Listener {
     private static void registerPlayer(Player player) {
         var factionPlayer = FactionPlayer.getFactionPlayerHandler().register(player);
         Faction.getFactionHandler().register(factionPlayer.getFactionData());
-        var onlinePlayer = FactionOnlinePlayer.getFactionOnlinePlayerHandler().get(player);
-        onlinePlayer.updateFactionBorder();
     }
 
     private static void unregisterPlayer(Player player) {
@@ -203,35 +209,42 @@ public class FactionLoaderListener implements Listener {
         }, false);
     }
 
-    private void showTerritoryOwner(FactionOnlinePlayer onlinePlayer, Chunk fromChunk, Chunk toChunk) {
-        var toChunkClaim = ClaimChunk.getClaimChunkHandler().getLoaded(toChunk);
+    private static void showTerritoryOwner(FactionOnlinePlayer onlinePlayer,
+                                   @NonNull Chunk fromChunk, @NonNull Chunk toChunk) {
+
         var fromChunkClaim = ClaimChunk.getClaimChunkHandler().getLoaded(fromChunk);
+        var toChunkClaim = ClaimChunk.getClaimChunkHandler().getLoaded(toChunk);
 
-        onlinePlayer.updateFactionBorder(toChunk, toChunkClaim);
-        if (toChunkClaim == null || fromChunkClaim == null)
+        showTerritoryOwner(onlinePlayer, fromChunkClaim, toChunkClaim);
+    }
+
+    private static void showTerritoryOwner(FactionOnlinePlayer onlinePlayer,
+                                   @Nullable ClaimChunk fromClaimChunk, @Nullable ClaimChunk toClaimChunk) {
+
+        if (toClaimChunk == null || fromClaimChunk == null)
             return;
 
-        if (toChunkClaim.allows(onlinePlayer) == fromChunkClaim.allows(onlinePlayer))
+        if (toClaimChunk.allows(onlinePlayer) == fromClaimChunk.allows(onlinePlayer))
             return;
 
-        if (toChunkClaim.isClaimed()) {
+        if (toClaimChunk.isClaimed()) {
             onlinePlayer.sendMsg(new ActionBarMsg()
                     .appendMsg("Entering ", ChatColor.GRAY)
-                    .appendMsg(getTerritoryOwner(toChunkClaim), ChatColor.WHITE)
+                    .appendMsg(getTerritoryOwner(toClaimChunk), ChatColor.WHITE)
                     .appendMsg(FactionOnlinePlayer.territorySuffix, ChatColor.GRAY));
             return;
         }
 
-        if (!fromChunkClaim.isClaimed())
+        if (!fromClaimChunk.isClaimed())
             return;
 
         onlinePlayer.sendMsg(new ActionBarMsg()
                 .appendMsg("Leaving ", ChatColor.GRAY)
-                .appendMsg(getTerritoryOwner(fromChunkClaim), ChatColor.WHITE)
+                .appendMsg(getTerritoryOwner(fromClaimChunk), ChatColor.WHITE)
                 .appendMsg(FactionOnlinePlayer.territorySuffix, ChatColor.GRAY));
     }
 
-    private String getTerritoryOwner(ClaimChunk claimChunk) {
+    private static String getTerritoryOwner(ClaimChunk claimChunk) {
         var chunkFaction = claimChunk.getFaction();
         if (chunkFaction != null) return chunkFaction.getFullName();
 

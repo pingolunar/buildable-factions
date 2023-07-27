@@ -17,7 +17,7 @@ import java.util.UUID;
 public class ClaimChunk implements TxtDatabase {
 
     //region Constructors
-    ClaimChunk() {
+    public ClaimChunk() {
         playerID = null;
     }
 
