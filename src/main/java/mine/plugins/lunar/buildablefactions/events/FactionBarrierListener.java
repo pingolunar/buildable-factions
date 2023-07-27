@@ -71,7 +71,7 @@ public class FactionBarrierListener extends BarrierProtectionListener {
                 player.sendMessage("Teleported");
                 if (onlinePlayer.isRandomTeleporting()) onlinePlayer.setRandomTeleported();
             });
-        });
+        }, false, true);
 
         return null;
     }

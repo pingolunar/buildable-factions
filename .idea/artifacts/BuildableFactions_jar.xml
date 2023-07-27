@@ -1,0 +1,10 @@
+<component name="ArtifactManager">
+  <artifact type="jar" name="BuildableFactions:jar">
+    <output-path>$PROJECT_DIR$/out/artifacts/BuildableFactions_jar</output-path>
+    <root id="archive" name="BuildableFactions.jar">
+      <element id="module-output" name="BuildableFactions" />
+      <element id="file-copy" path="$PROJECT_DIR$/src/main/resources/plugin.yml" />
+      <element id="module-output" name="PluginFramework" />
+    </root>
+  </artifact>
+</component>

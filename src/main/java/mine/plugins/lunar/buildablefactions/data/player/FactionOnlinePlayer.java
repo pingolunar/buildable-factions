@@ -68,8 +68,12 @@ public class FactionOnlinePlayer extends OnlinePlayerData {
     }
 
     public void setDatabaseTask(Runnable databaseTask, boolean warnPlayer) {
-        if (isDatabaseTaskActive()) {
-            if (warnPlayer) player.sendMessage(ChatColor.GRAY+"Your last request is still being processed\n" +
+        setDatabaseTask(databaseTask, warnPlayer, false);
+    }
+
+    public void setDatabaseTask(Runnable databaseTask, boolean warnPlayer, boolean ignoreQueue) {
+        if (!ignoreQueue && isDatabaseTaskActive()) {
+            if (warnPlayer) player.sendMessage(ChatColor.GRAY+"Your last action is still being processed\n" +
                     "Try again later");
             return;
         }
@@ -80,7 +84,6 @@ public class FactionOnlinePlayer extends OnlinePlayerData {
         if (this.databaseTask != null) return;
 
         player.sendMessage(ChatColor.RED + "Request failed, try again");
-        disableImmunity();
     }
 
     private boolean isDatabaseTaskActive() {
@@ -103,9 +106,14 @@ public class FactionOnlinePlayer extends OnlinePlayerData {
     }
 
     public void randomTeleport() {
-        setRandomTeleporting();
-        player.teleport(getRandomTeleport());
-        player.sendMessage("Random teleport complete");
+        try {
+            player.teleport(getRandomTeleport());
+            setRandomTeleporting();
+            player.sendMessage("Random teleport complete");
+
+        } catch (IllegalStateException ignored) {
+            player.sendMessage(ChatColor.RED+"Random teleport failed");
+        }
     }
 
     public Location getRandomTeleport() throws IllegalStateException {
@@ -171,15 +179,6 @@ public class FactionOnlinePlayer extends OnlinePlayerData {
         isRandomTeleporting = false;
     }
 
-    public void enableImmunity() {
-        player.setGameMode(GameMode.ADVENTURE);
-        player.setInvulnerable(true);
-    }
-
-    public void disableImmunity() {
-        player.setGameMode(GameMode.SURVIVAL);
-        player.setInvulnerable(false);
-    }
     //endregion
 
     //region Faction

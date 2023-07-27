@@ -11,6 +11,7 @@ import mine.plugins.lunar.buildablefactions.events.FactionLoaderListener;
 import mine.plugins.lunar.buildablefactions.events.FactionWelcomeListener;
 import mine.plugins.lunar.plugin_framework.cmds.BaseCmd;
 import mine.plugins.lunar.plugin_framework.data.Debugger;
+import mine.plugins.lunar.plugin_framework.event.listener.PlayerMovementListener;
 import org.bukkit.plugin.java.JavaPlugin;
 
 import java.util.Collections;
@@ -21,6 +22,8 @@ public final class Main extends JavaPlugin {
     @Override
     public void onEnable() {
         Debugger.isDebugActive = false;
+        Debugger.isFileDebugActive = false;
+
         var pluginManager = getServer().getPluginManager();
 
         FactionEntityManager.enable(this);
@@ -39,11 +42,12 @@ public final class Main extends JavaPlugin {
         var econ = new EconomyManager(this).getEconomyProvider();
         if (econ == null) {
             getLogger().log(Level.SEVERE, "Failed to enable Vault economy API");
-            pluginManager.disablePlugin(this);
             return;
         }
 
         FactionOnlinePlayer.setEcon(econ);
+
+        pluginManager.registerEvents(new PlayerMovementListener(), this);
 
         pluginManager.registerEvents(new FactionLoaderListener(this), this);
         pluginManager.registerEvents(new FactionBarrierListener(this), this);

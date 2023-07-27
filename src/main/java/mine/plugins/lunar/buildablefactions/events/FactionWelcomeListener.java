@@ -44,16 +44,22 @@ public class FactionWelcomeListener implements Listener {
         var randomClaimChunkID = factionPlayer.getRandomClaimChunkID();
         if (randomClaimChunkID != null) {
 
-            var randomChunk = ClaimChunkHandler.chunkFromID(randomClaimChunkID);
-            for (int i = 0; i < 99; i++) {
-                var randomLocInfo = onlinePlayer.getRandomLocation(randomChunk);
-                if (!randomLocInfo.isSafe()) continue;
+            try {
+                var randomChunk = ClaimChunkHandler.chunkFromID(randomClaimChunkID);
+                for (int i = 0; i < 99; i++) {
+                    var randomLocInfo = onlinePlayer.getRandomLocation(randomChunk);
+                    if (!randomLocInfo.isSafe()) continue;
 
-                e.setRespawnLocation(randomLocInfo.loc());
-                return;
+                    e.setRespawnLocation(randomLocInfo.loc());
+                    return;
+                }
+
+                e.setRespawnLocation(onlinePlayer.getRandomLocation(randomChunk).loc());
+
+            }  catch (IllegalStateException ignored) {
+                plugin.getLogger().log(Level.WARNING, "Respawn random teleportation failed");
             }
 
-            e.setRespawnLocation(onlinePlayer.getRandomLocation(randomChunk).loc());
             return;
         }
 

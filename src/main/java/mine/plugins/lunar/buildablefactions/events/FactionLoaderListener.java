@@ -1,14 +1,15 @@
 package mine.plugins.lunar.buildablefactions.events;
 
-import mine.plugins.lunar.buildablefactions.data.faction.FactionEntityManager;
 import mine.plugins.lunar.buildablefactions.data.faction.Faction;
+import mine.plugins.lunar.buildablefactions.data.faction.FactionEntityManager;
 import mine.plugins.lunar.buildablefactions.data.player.FactionOnlinePlayer;
 import mine.plugins.lunar.buildablefactions.data.player.FactionPlayer;
 import mine.plugins.lunar.buildablefactions.data.world.BannerState;
 import mine.plugins.lunar.buildablefactions.data.world.ClaimChunk;
-import mine.plugins.lunar.buildablefactions.data.world.ClaimChunkHandler;
 import mine.plugins.lunar.plugin_framework.data.Debugger;
 import mine.plugins.lunar.plugin_framework.database.DatabaseHandler;
+import mine.plugins.lunar.plugin_framework.event.PlayerBlockMoveEvent;
+import mine.plugins.lunar.plugin_framework.event.PlayerChunkMoveEvent;
 import mine.plugins.lunar.plugin_framework.player.ActionBarMsg;
 import net.md_5.bungee.api.ChatColor;
 import org.bukkit.Bukkit;
@@ -135,67 +136,99 @@ public class FactionLoaderListener implements Listener {
 
     //region Faction Border
     @EventHandler(priority = EventPriority.HIGHEST)
-    private void updateFactionBorder(PlayerRespawnEvent e) {
-        var onlinePlayer = FactionOnlinePlayer.getFactionOnlinePlayerHandler().get(e.getPlayer());
-        onlinePlayer.updateFactionBorder(e.getRespawnLocation().getChunk());
+    private void updateFactionBorderY(PlayerBlockMoveEvent e) {
+
+        var to = e.playerMoveEvent.getTo();
+        if (to == null) return;
+
+        var from = e.playerMoveEvent.getFrom();
+
+        if (from.getBlockY() == to.getBlockY())
+            return;
+
+        var player = e.playerMoveEvent.getPlayer();
+        var onlinePlayer = FactionOnlinePlayer.getFactionOnlinePlayerHandler().get(player);
+
+        onlinePlayer.updateFactionBorderY(to);
     }
 
     @EventHandler(priority = EventPriority.HIGHEST)
-    private void showChunkOwner(PlayerMoveEvent e) {
+    private void updateFactionBorder(PlayerRespawnEvent e) {
         var player = e.getPlayer();
+        var onlinePlayer = FactionOnlinePlayer.getFactionOnlinePlayerHandler().get(player);
+
+        var currentChunk = player.getLocation().getChunk();
+        var respawnChunk = e.getRespawnLocation().getChunk();
+
+        onlinePlayer.setDatabaseTask(() -> {
+            onlinePlayer.updateFactionBorder(respawnChunk);
+            showTerritoryOwner(onlinePlayer, currentChunk, respawnChunk);
+        }, false);
+    }
+
+    @EventHandler(priority = EventPriority.HIGHEST)
+    private void updateFactionBorder(PlayerTeleportEvent e) {
 
         var to = e.getTo();
         if (to == null) return;
+
         var from = e.getFrom();
 
         var toChunk = to.getChunk();
         var fromChunk = from.getChunk();
 
+        var player = e.getPlayer();
         var onlinePlayer = FactionOnlinePlayer.getFactionOnlinePlayerHandler().get(player);
 
-        if (ClaimChunkHandler.areChunksEquals(toChunk, fromChunk)) {
+        onlinePlayer.setDatabaseTask(() -> {
+            onlinePlayer.updateFactionBorder(toChunk);
+            showTerritoryOwner(onlinePlayer, fromChunk, toChunk);
+        }, false);
+    }
 
-            if (from.getBlockX() == to.getBlockX() &&
-                    from.getBlockY() == to.getBlockY() &&
-                    from.getBlockZ() == to.getBlockZ())
-                return;
+    @EventHandler(priority = EventPriority.HIGHEST)
+    private void updateFactionBorder(PlayerChunkMoveEvent e) {
 
-            //region PlayerBlockMoveEvent
-            if (from.getBlockY() == to.getBlockY())
-                return;
+        var toChunk = e.getToChunk();
+        if (toChunk == null) return;
 
-            onlinePlayer.updateFactionBorderY(to);
-            //endregion
+        var fromChunk = e.getFromChunk();
+
+        var player = e.playerMoveEvent.getPlayer();
+        var onlinePlayer = FactionOnlinePlayer.getFactionOnlinePlayerHandler().get(player);
+
+        onlinePlayer.setDatabaseTask(() -> {
+            onlinePlayer.updateFactionBorder(toChunk);
+            showTerritoryOwner(onlinePlayer, fromChunk, toChunk);
+        }, false);
+    }
+
+    private void showTerritoryOwner(FactionOnlinePlayer onlinePlayer, Chunk fromChunk, Chunk toChunk) {
+        var toChunkClaim = ClaimChunk.getClaimChunkHandler().getLoaded(toChunk);
+        var fromChunkClaim = ClaimChunk.getClaimChunkHandler().getLoaded(fromChunk);
+
+        onlinePlayer.updateFactionBorder(toChunk, toChunkClaim);
+        if (toChunkClaim == null || fromChunkClaim == null)
+            return;
+
+        if (toChunkClaim.allows(onlinePlayer) == fromChunkClaim.allows(onlinePlayer))
+            return;
+
+        if (toChunkClaim.isClaimed()) {
+            onlinePlayer.sendMsg(new ActionBarMsg()
+                    .appendMsg("Entering ", ChatColor.GRAY)
+                    .appendMsg(getTerritoryOwner(toChunkClaim), ChatColor.WHITE)
+                    .appendMsg(FactionOnlinePlayer.territorySuffix, ChatColor.GRAY));
             return;
         }
 
-        //region PlayerChunkMoveEvent
-        onlinePlayer.setDatabaseTask(() -> {
+        if (!fromChunkClaim.isClaimed())
+            return;
 
-            var toChunkClaim = ClaimChunk.getClaimChunkHandler().getLoaded(toChunk);
-            var fromChunkClaim = ClaimChunk.getClaimChunkHandler().getLoaded(fromChunk);
-
-            onlinePlayer.updateFactionBorder(toChunk, toChunkClaim);
-            if (toChunkClaim == null || fromChunkClaim == null)
-                return;
-
-            if (toChunkClaim.allows(onlinePlayer) == fromChunkClaim.allows(onlinePlayer))
-                return;
-
-            if (!toChunkClaim.isClaimed()) {
-                onlinePlayer.sendMsg(new ActionBarMsg()
-                    .appendMsg("Leaving ", ChatColor.GRAY)
-                    .appendMsg(getTerritoryOwner(fromChunkClaim), ChatColor.WHITE)
-                    .appendMsg(FactionOnlinePlayer.territorySuffix, ChatColor.GRAY));
-                return;
-            }
-
-            onlinePlayer.sendMsg(new ActionBarMsg()
-                .appendMsg("Entering ", ChatColor.GRAY)
-                .appendMsg(getTerritoryOwner(toChunkClaim), ChatColor.WHITE)
+        onlinePlayer.sendMsg(new ActionBarMsg()
+                .appendMsg("Leaving ", ChatColor.GRAY)
+                .appendMsg(getTerritoryOwner(fromChunkClaim), ChatColor.WHITE)
                 .appendMsg(FactionOnlinePlayer.territorySuffix, ChatColor.GRAY));
-        }, false);
-        //endregion
     }
 
     private String getTerritoryOwner(ClaimChunk claimChunk) {
